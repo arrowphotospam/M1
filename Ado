@@ -1,0 +1,224 @@
+ADODOTNET DISCONNECTED
+
+namespace DisconnectedArchitecture.Models
+{
+    public class Employee
+    {
+        public int EmployeeID { get; set; }
+        public string FirstName { get; set; }
+        public string LastName { get; set; }
+        public int Department { get; set; }
+        public int Salary { get; set; }
+    }
+}
+
+
+
+
+using System;
+using System.Data;
+using System.Data.SqlClient;
+using DisconnectedArchitecture.Models;
+
+namespace DisconnectedArchitecture
+{
+    public static class ConnectionStringProvider
+    {
+        public static string ConnectionString { get; } = "User ID=sa;password=examlyMssql@123;server=localhost;Database=appdb;trusted_connection=false;Persist Security Info=False;Encrypt=False;";
+    }
+
+    public class Program
+    {
+        static string connectionString = ConnectionStringProvider.ConnectionString;
+
+        public static void Main(string[] args)
+        {
+            while (true)
+            {
+                Console.WriteLine("\nMenu:");
+                Console.WriteLine("1. Add Employee");
+                Console.WriteLine("2. List Employees");
+                Console.WriteLine("3. Update Employee Salary");
+                Console.WriteLine("4. Delete Employee");
+                Console.WriteLine("5. Exit");
+                Console.Write("Enter your choice: ");
+                string choice = Console.ReadLine();
+
+                switch (choice)
+                {
+                    case "1":
+                        Employee employee = new Employee();
+                        Console.Write("Enter Employee ID: ");
+                        employee.EmployeeID = int.Parse(Console.ReadLine());
+                        Console.Write("Enter First Name: ");
+                        employee.FirstName = Console.ReadLine();
+                        Console.Write("Enter Last Name: ");
+                        employee.LastName = Console.ReadLine();
+                        Console.Write("Enter Department ID: ");
+                        employee.Department = int.Parse(Console.ReadLine());
+                        Console.Write("Enter Salary: ");
+                        employee.Salary = int.Parse(Console.ReadLine());
+                        AddEmployee(employee);
+                        break;
+
+                    case "2":
+                        ListEmployees();
+                        break;
+
+                    case "3":
+                        Console.Write("Enter Employee ID to update: ");
+                        int updateId = int.Parse(Console.ReadLine());
+                        Console.Write("Enter new Salary: ");
+                        int updateSalary = int.Parse(Console.ReadLine());
+                        UpdateEmployeeSalary(updateId, updateSalary);
+                        break;
+
+                    case "4":
+                        Console.Write("Enter Employee ID to delete: ");
+                        int deleteId = int.Parse(Console.ReadLine());
+                        DeleteEmployee(deleteId);
+                        break;
+
+                    case "5":
+                        Console.WriteLine("Exiting...");
+                        return;
+
+                    default:
+                        Console.WriteLine("Invalid choice. Please try again.");
+                        break;
+                }
+            }
+        }
+
+        public static void AddEmployee(Employee employee)
+        {
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(connectionString))
+                {
+                    SqlDataAdapter adapter = new SqlDataAdapter("SELECT * FROM Employees", connection);
+                    DataSet dataSet = new DataSet();
+                    adapter.Fill(dataSet, "Employees");
+
+                    DataRow newRow = dataSet.Tables["Employees"].NewRow();
+                    newRow["EmployeeID"] = employee.EmployeeID;
+                    newRow["FirstName"] = employee.FirstName;
+                    newRow["LastName"] = employee.LastName;
+                    newRow["Department"] = employee.Department;
+                    newRow["Salary"] = employee.Salary;
+
+                    dataSet.Tables["Employees"].Rows.Add(newRow);
+
+                    SqlCommandBuilder builder = new SqlCommandBuilder(adapter);
+                    adapter.Update(dataSet, "Employees");
+
+                    Console.WriteLine("Added Successfully!");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Could not add: " + ex.Message);
+            }
+        }
+
+        public static void ListEmployees()
+        {
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(connectionString))
+                {
+                    SqlDataAdapter adapter = new SqlDataAdapter("SELECT * FROM Employees", connection);
+                    DataSet dataSet = new DataSet();
+                    adapter.Fill(dataSet, "Employees");
+
+                    foreach (DataRow row in dataSet.Tables["Employees"].Rows)
+                    {
+                        Console.WriteLine($"Employee ID: {row["EmployeeID"]}, First Name: {row["FirstName"]}, Last Name: {row["LastName"]}, Department: {row["Department"]}, Salary: {row["Salary"]}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Could not list: " + ex.Message);
+            }
+        }
+
+        public static void UpdateEmployeeSalary(int employeeID, int newSalary)
+        {
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(connectionString))
+                {
+                    SqlDataAdapter adapter = new SqlDataAdapter("SELECT * FROM Employees", connection);
+                    DataSet dataSet = new DataSet();
+                    adapter.Fill(dataSet, "Employees");
+
+                    bool found = false;
+                    foreach (DataRow row in dataSet.Tables["Employees"].Rows)
+                    {
+                        if ((int)row["EmployeeID"] == employeeID)
+                        {
+                            row["Salary"] = newSalary;
+                            found = true;
+                            break;
+                        }
+                    }
+
+                    if (found)
+                    {
+                        SqlCommandBuilder builder = new SqlCommandBuilder(adapter);
+                        adapter.Update(dataSet, "Employees");
+                        Console.WriteLine("Updated successfully!");
+                    }
+                    else
+                    {
+                        Console.WriteLine("ID not found!");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error while updating: " + ex.Message);
+            }
+        }
+
+        public static void DeleteEmployee(int employeeID)
+        {
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(connectionString))
+                {
+                    SqlDataAdapter adapter = new SqlDataAdapter("SELECT * FROM Employees", connection);
+                    DataSet dataSet = new DataSet();
+                    adapter.Fill(dataSet, "Employees");
+
+                    bool found = false;
+                    foreach (DataRow row in dataSet.Tables["Employees"].Rows)
+                    {
+                        if ((int)row["EmployeeID"] == employeeID)
+                        {
+                            row.Delete();
+                            found = true;
+                            break;
+                        }
+                    }
+
+                    if (found)
+                    {
+                        SqlCommandBuilder builder = new SqlCommandBuilder(adapter);
+                        adapter.Update(dataSet, "Employees");
+                        Console.WriteLine("Deleted Successfully!");
+                    }
+                    else
+                    {
+                        Console.WriteLine("Could not find the ID to delete.");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error while deleting: " + ex.Message);
+            }
+        }
+    }
+}
